@@ -26,30 +26,17 @@ import android.os.AsyncTask;
 class DownloadFile extends AsyncTask<List<Object>, Integer, String> {
 
 	private File outputDirectory;
-	private boolean enableNotification, useCache;
-	private Integer notificationId;
-	private String notificationTitle;
-	private String notificationSuccessTitle;
-	private String notificationSuccessDescription;
-	private String notificationFailureTitle;
-	private String notificationFailureDescription;
+	private boolean useCache;
 	private Context mContext;
-	private NotificationHelper notificationHelper;
 	IAsyncFetchListener fetchListener = null;
 
-	public DownloadFile(Context context, boolean cache, File direcory,
-			boolean enable, Integer id, String title, String stitle,
-			String sdesc, String ftitle, String fdesc) {
+	String mimeType = null;
+	String name = null;
+
+	public DownloadFile(Context context, boolean cache, File directory) {
 		mContext = context;
 		useCache = cache;
-		outputDirectory = direcory;
-		enableNotification = enable;
-		notificationId = id;
-		notificationTitle = title;
-		notificationSuccessTitle = stitle;
-		notificationSuccessDescription = sdesc;
-		notificationFailureTitle = ftitle;
-		notificationFailureDescription = fdesc;
+		outputDirectory = directory;
 	}
 
 	public void setListener(IAsyncFetchListener listener) {
@@ -58,11 +45,6 @@ class DownloadFile extends AsyncTask<List<Object>, Integer, String> {
 
 	@Override
 	protected void onPreExecute() {
-		if (enableNotification) {
-			notificationHelper = new NotificationHelper(mContext,
-					notificationId, notificationTitle);
-			notificationHelper.createNotification();
-		}
 	}
 
 	@Override
@@ -84,12 +66,14 @@ class DownloadFile extends AsyncTask<List<Object>, Integer, String> {
 						.get(i);
 
 				String strUrl = hashMap.get("url");
-				String name;
+
 				if (hashMap.containsKey("name")) {
 					name = hashMap.get("name");
 				} else {
 					name = strUrl.substring(strUrl.lastIndexOf('/'));
 				}
+
+
 				fileObj = new File(outputDirectory, name);
 				deleteUnCompletedFile(fileObj);
 
@@ -104,6 +88,7 @@ class DownloadFile extends AsyncTask<List<Object>, Integer, String> {
 				}
 
 				int fileLength = connection.getContentLength();
+				mimeType = connection.getContentType();
 
 				input = connection.getInputStream();
 				output = new FileOutputStream(fileObj);
@@ -130,10 +115,6 @@ class DownloadFile extends AsyncTask<List<Object>, Integer, String> {
 		} catch (Exception e) {
 
 			deleteUnCompletedFile(fileObj);
-			if (enableNotification) {
-				notificationHelper.notcompleted(notificationFailureTitle,
-						notificationFailureDescription);
-			}
 			this.fetchListener.onError(e.toString(), i);
 
 		} finally {
@@ -162,26 +143,17 @@ class DownloadFile extends AsyncTask<List<Object>, Integer, String> {
 
 	@Override
 	protected void onProgressUpdate(Integer... progress) {
-		if (enableNotification) {
-			notificationHelper.progressUpdate(progress[0]);
-		}
 		this.fetchListener.onLoad(progress[0]);
 	}
 
 	@Override
 	protected void onPostExecute(String result) {
-		if (!enableNotification
-				|| notificationHelper.completed(notificationSuccessTitle,
-						notificationSuccessDescription)) {
-			this.fetchListener.onComplete();
-		}
+		Log.e("DownloaderModule native: onPostExecute: ", mimeType);
+		this.fetchListener.onComplete(name, mimeType);
 	}
 
 	@Override
 	protected void onCancelled() {
-		if (enableNotification) {
-			notificationHelper.cancelnotification();
-		}
 		this.fetchListener.onCancel();
 	}
 

@@ -8,6 +8,6 @@ public interface IAsyncFetchListener extends EventListener {
 	void onLoad(Integer progress);
 
 	void onCancel();
-	
-	void onComplete();
+
+	void onComplete(String name, String mimeType);
 }

@@ -20,14 +20,7 @@ import com.mykingdom.downloader.IAsyncFetchListener;
 @Kroll.proxy(creatableInModule = DownloaderModule.class, propertyAccessors = {
 		DownloaderModule.PROPERTY_FILES_TO_DOWNLOAD,
 		DownloaderModule.PROPERTY_OUTPUT_DIRECTORY,
-		DownloaderModule.PROPERTY_USE_CACHE,
-		DownloaderModule.PROPERTY_ENABLE_NOTIFICATION,
-		DownloaderModule.PROPERTY_NOTIFICATION_ID,
-		DownloaderModule.PROPERTY_NOTIFICATION_TITLE,
-		DownloaderModule.PROPERTY_NOTIFICATION_SUCCESS_TITLE,
-		DownloaderModule.PROPERTY_NOTIFICATION_SUCCESS_DESCRIPTION,
-		DownloaderModule.PROPERTY_NOTIFICATION_FAILURE_TITLE,
-		DownloaderModule.PROPERTY_NOTIFICATION_FAILURE_DESCRIPTION })
+		DownloaderModule.PROPERTY_USE_CACHE})
 public class AsyncDownloaderProxy extends KrollProxy {
 
 	// Standard Debugging variables
@@ -83,34 +76,7 @@ public class AsyncDownloaderProxy extends KrollProxy {
 				getActivity().getApplicationContext(),
 				TiConvert.toBoolean(
 						getProperty(DownloaderModule.PROPERTY_USE_CACHE), true),
-				outputDirectory,
-				TiConvert
-						.toBoolean(
-								getProperty(DownloaderModule.PROPERTY_ENABLE_NOTIFICATION),
-								true),
-				TiConvert.toInt(
-						getProperty(DownloaderModule.PROPERTY_NOTIFICATION_ID),
-						1),
-				TiConvert
-						.toString(
-								getProperty(DownloaderModule.PROPERTY_NOTIFICATION_TITLE),
-								"Download in progress"),
-				TiConvert
-						.toString(
-								getProperty(DownloaderModule.PROPERTY_NOTIFICATION_SUCCESS_TITLE),
-								"Download completed"),
-				TiConvert
-						.toString(
-								getProperty(DownloaderModule.PROPERTY_NOTIFICATION_SUCCESS_DESCRIPTION),
-								"Download completed successfully."),
-				TiConvert
-						.toString(
-								getProperty(DownloaderModule.PROPERTY_NOTIFICATION_FAILURE_TITLE),
-								"Download failed"),
-				TiConvert
-						.toString(
-								getProperty(DownloaderModule.PROPERTY_NOTIFICATION_FAILURE_DESCRIPTION),
-								"Please try again."));
+				outputDirectory);
 
 		downloader.setListener(new IAsyncFetchListener() {
 			@Override
@@ -142,9 +108,13 @@ public class AsyncDownloaderProxy extends KrollProxy {
 			}
 
 			@Override
-			public void onComplete() {
+			public void onComplete(String name, String mimeType) {
+				Log.d(TAG, name);
 				if (hasListeners("success")) {
-					fireEvent("success", null);
+					KrollDict successKrollDict = new KrollDict();
+					successKrollDict.put("name", name);
+					successKrollDict.put("mimeType", mimeType);
+					fireEvent("success", successKrollDict);
 				}
 				isDownloading = false;
 			}
